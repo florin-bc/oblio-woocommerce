@@ -240,13 +240,6 @@ function _wp_oblio_generate_invoice($order_id, $options = array()) {
 
 
     $collect = [];
-    $isCard = !in_array($order->get_payment_method(), ['bacs', 'cod']);
-    if ($options['docType'] === 'proforma' && $isCard) {
-        return [
-            'error' => 'Nu se pot genera proforme pentru comanzile incasate prin card'
-        ];
-    }
-
     if ($auto_collect !== 0) {
         if (($auto_collect === 1 && $isCard) || $auto_collect === 2) {
             $type = 'Card';
