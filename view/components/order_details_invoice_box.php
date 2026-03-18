@@ -74,7 +74,7 @@ $displayDocument = function ( $post, $options = [] ) use ( $wpdb, $order ) {
 			__( 'Emite ' . $options['name'], 'woocommerce-oblio' )
 		);
 
-		if ( $options['docType'] === 'invoice' && intval( get_option( 'oblio_use_stock' ) ) === 1) {
+		if ( in_array( $options['docType'], [ 'invoice', 'notice' ], true ) && intval( get_option( 'oblio_use_stock' ) ) === 1) {
 			echo sprintf(
 				'<p><a class="button oblio-generate-%s" href="%s" target="_blank">%s</a></p>',
 				$options['docType'],
@@ -84,7 +84,7 @@ $displayDocument = function ( $post, $options = [] ) use ( $wpdb, $order ) {
 		}
 	}
 
-	if ( ! $link || $lastInvoice == $post->ID || $options['docType'] === 'proforma' ) {
+	if ( ! $link || $lastInvoice == $post->ID || in_array( $options['docType'], [ 'proforma', 'notice' ], true ) ) {
 		$hidden = $link ? '' : 'hidden';
 		echo sprintf(
 			'<p><a class="button oblio-delete-%s %s" href="%s" target="_blank">%s</a></p>',
@@ -189,6 +189,12 @@ $displayDocument( $post, [
 			] );
 		}
 	}
+] );
+
+// Shipping notice (Aviz) – emitted similarly to proforma, but with its own series and payload rules.
+$displayDocument( $post, [
+	'docType' => 'notice',
+	'name'    => 'aviz',
 ] );
 ?>
 <style type="text/css">

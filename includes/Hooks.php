@@ -105,9 +105,13 @@ function _wp_oblio_ajax_handler() {
         switch ($type) {
             case 'series_name':
             case 'series_name_proforma':
+            case 'series_name_notice':
                 $options = ['type' => 'Factura'];
                 if ($type == 'series_name_proforma') {
                     $options['type'] = 'Proforma';
+                }
+                if ($type == 'series_name_notice') {
+                    $options['type'] = 'Aviz';
                 }
                 $response = $api->nomenclature('series', '', $options);
                 $result = $response['data'];
@@ -147,10 +151,14 @@ function _wp_oblio_invoice_ajax_handler() {
         case 'oblio-generate-invoice': $result = _wp_oblio_generate_invoice($order_id, ['date' => $date]); break; 
         case 'oblio-generate-invoice-stock': $result = _wp_oblio_generate_invoice($order_id, ['use_stock' => true, 'date' => $date]); break;
         case 'oblio-generate-proforma-stock': $result = _wp_oblio_generate_invoice($order_id, ['docType' => 'proforma', 'date' => $date]); break;
+        case 'oblio-generate-notice': $result = _wp_oblio_generate_invoice($order_id, ['docType' => 'notice', 'use_stock' => false, 'date' => $date]); break;
+        case 'oblio-generate-notice-stock': $result = _wp_oblio_generate_invoice($order_id, ['docType' => 'notice', 'use_stock' => true, 'date' => $date]); break;
         case 'oblio-view-invoice': die(_wp_oblio_generate_invoice($order_id, ['redirect' => true, 'date' => $date])); break; 
         case 'oblio-view-proforma': die(_wp_oblio_generate_invoice($order_id, ['redirect' => true, 'docType' => 'proforma', 'date' => $date])); break; 
+        case 'oblio-view-notice': die(_wp_oblio_generate_invoice($order_id, ['redirect' => true, 'docType' => 'notice', 'date' => $date])); break; 
         case 'oblio-delete-invoice': $result = _wp_oblio_delete_invoice($order_id); break;
         case 'oblio-delete-proforma': $result = _wp_oblio_delete_invoice($order_id, ['docType' => 'proforma']); break;
+        case 'oblio-delete-notice': $result = _wp_oblio_delete_invoice($order_id, ['docType' => 'notice']); break;
     }
     die(json_encode($result));
 }
@@ -342,6 +350,7 @@ function _wp_register_oblio_plugin_settings() {
     register_setting('oblio-plugin-settings-group', 'oblio_use_stock');
     register_setting('oblio-plugin-settings-group', 'oblio_series_name');
     register_setting('oblio-plugin-settings-group', 'oblio_series_name_proforma');
+    register_setting('oblio-plugin-settings-group', 'oblio_series_name_notice');
     register_setting('oblio-plugin-settings-group', 'oblio_workstation');
     register_setting('oblio-plugin-settings-group', 'oblio_management');
     register_setting('oblio-plugin-settings-group', 'oblio_invoice_autogen');
@@ -463,6 +472,7 @@ function _wp_oblio_settings_page() {
             $companies = $api->nomenclature('companies');
             $series = [];
             $series_proforma = [];
+            $series_notice = [];
             $workStations = [];
             $management = [];
             
@@ -504,6 +514,11 @@ function _wp_oblio_settings_page() {
                     usleep(500000); // 0.5s sleep
                     $response = $api->nomenclature('series', '', ['type' => 'Proforma']);
                     $series_proforma = $response['data'];
+
+                    // series notices (avize)
+                    usleep(500000); // 0.5s sleep
+                    $response = $api->nomenclature('series', '', ['type' => 'Aviz']);
+                    $series_notice = $response['data'];
                     
                     // management
                     if ($useStock) {
@@ -537,6 +552,19 @@ function _wp_oblio_settings_page() {
                     'name' => 'oblio_series_name_proforma',
                     'options' => [
                         'query' => array_merge([['name' => 'Selecteaza']], $series_proforma),
+                        'id'    => 'name',
+                        'name'  => 'name',
+                    ],
+                    'class' => 'chosen',
+                    // 'lang' => true,
+                    'required' => true
+                );
+                $fields[] = array(
+                    'type' => 'select',
+                    'label' => __('Serie aviz', 'woocommerce-oblio'),
+                    'name' => 'oblio_series_name_notice',
+                    'options' => [
+                        'query' => array_merge([['name' => 'Selecteaza']], $series_notice),
                         'id'    => 'name',
                         'name'  => 'name',
                     ],

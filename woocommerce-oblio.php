@@ -179,6 +179,7 @@ function _wp_oblio_generate_invoice($order_id, $options = array()) {
     }
     switch ($options['docType']) {
         case 'proforma': $series_name = get_option('oblio_series_name_proforma'); break;
+        case 'notice': $series_name = get_option('oblio_series_name_notice'); break;
         default: $series_name = get_option('oblio_series_name');
     }
     $series_name_key = 'oblio_' . $options['docType'] . '_series_name';
@@ -217,6 +218,7 @@ function _wp_oblio_generate_invoice($order_id, $options = array()) {
     if (empty($use_stock)) {
         $options['use_stock'] = 0;
     }
+    
     if (!empty($options['date'])) {
         $issueDate = $options['date'];
     } else {
@@ -240,13 +242,6 @@ function _wp_oblio_generate_invoice($order_id, $options = array()) {
 
 
     $collect = [];
-    $isCard = !in_array($order->get_payment_method(), ['bacs', 'cod']);
-    if ($options['docType'] === 'proforma' && $isCard) {
-        return [
-            'error' => 'Nu se pot genera proforme pentru comanzile incasate prin card'
-        ];
-    }
-
     if ($auto_collect !== 0) {
         if (($auto_collect === 1 && $isCard) || $auto_collect === 2) {
             $type = 'Card';
@@ -303,7 +298,6 @@ function _wp_oblio_generate_invoice($order_id, $options = array()) {
         'products'           => [],
         'issuerName'         => get_option('oblio_invoice_issuer_name'),
         'issuerId'           => get_option('oblio_invoice_issuer_id'),
-        'noticeNumber'       => '',
         'internalNote'       => '',
         'deputyName'         => get_option('oblio_invoice_deputy_name'),
         'deputyIdentityCard' => get_option('oblio_invoice_deputy_identity_card'),
@@ -314,6 +308,11 @@ function _wp_oblio_generate_invoice($order_id, $options = array()) {
         'workStation'        => $workstation,
         'useStock'           => empty($options['use_stock']) ? 0 : 1,
     );
+
+    // Oblio API docs: notices don't support the "noticeNumber" parameter.
+    if ($options['docType'] !== 'notice') {
+        $data['noticeNumber'] = '';
+    }
     
     if (empty($data['referenceDocument'])) {
         /** @var \WC_Order_Item_Product[] */
@@ -515,6 +514,7 @@ function _wp_oblio_generate_invoice($order_id, $options = array()) {
         $api = new OblioSoftware\Api($email, $secret, $accessTokenHandler);
         switch ($options['docType']) {
             case 'proforma': $result = $api->createProforma($data); break;
+            case 'notice': $result = $api->createNotice($data); break;
             default: $result = $api->createInvoice($data);
         }
 
