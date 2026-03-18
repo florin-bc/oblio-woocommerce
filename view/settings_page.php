@@ -9,6 +9,7 @@
         var oblio_cui = $('#id_oblio_cui'),
             oblio_series_name = $('#id_oblio_series_name'),
             oblio_series_name_proforma = $('#id_oblio_series_name_proforma'),
+            oblio_series_name_notice = $('#id_oblio_series_name_notice'),
             oblio_workstation = $('#id_oblio_workstation'),
             oblio_management = $('#id_oblio_management'),
             useStock = parseInt(oblio_cui.find('option:selected').data('use-stock')) === 1;
@@ -30,6 +31,10 @@
             // series name proforma
             data.type = 'series_name_proforma';
             populateOptions(data, oblio_series_name_proforma);
+
+            // series name notice
+            data.type = 'series_name_notice';
+            populateOptions(data, oblio_series_name_notice);
             
             if (useStock) {
                 data.type = 'workstation';
