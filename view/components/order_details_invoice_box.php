@@ -146,6 +146,10 @@ $displayDocument = function ($post, $options = []) use ($wpdb, $order) {
 			$(document).ready(function() {
 				// Autocomplete local cu <datalist>, bazat pe oblioAutocomplete (wp_localize_script)
 				if (typeof window.oblioAutocomplete === 'object' && window.oblioAutocomplete !== null) {
+					var lastSet = (typeof window.oblioAutocomplete.lastSet === 'object' && window.oblioAutocomplete.lastSet !== null)
+						? window.oblioAutocomplete.lastSet
+						: {};
+
 					var map = {
 						issuerName: '#intocmit_de',
 						issuerId: '#intocmit_cnp',
@@ -182,6 +186,16 @@ $displayDocument = function ($post, $options = []) use ($wpdb, $order) {
 							}
 							$('<option></option>').attr('value', val).appendTo($datalist);
 						});
+
+						// Prefill with last used value (most recently saved).
+						// Only override if input is currently empty (avoid clobbering user edits).
+						if (($input.val() === '' || $input.val() === null) && values.length > 0) {
+							var lastValue = values[values.length - 1];
+							var prefillValue = (lastSet[field] !== undefined && lastSet[field] !== '') ? lastSet[field] : lastValue;
+							if (prefillValue) {
+								$input.val(prefillValue);
+							}
+						}
 					});
 				}
 

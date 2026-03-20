@@ -21,6 +21,14 @@ class Oblio_Autocomplete {
     );
 
     /**
+     * Stochează setul complet folosit la ultima emitere reușită.
+     * Array format: field => value
+     *
+     * @var string
+     */
+    public static $lastSetOptionKey = 'oblio_autocomplete_lastSet';
+
+    /**
      * Returnează lista de valori pentru un câmp.
      *
      * @param string $field
@@ -69,12 +77,13 @@ class Oblio_Autocomplete {
             $values = array();
         }
 
-        // Nu duplicăm valori (case-sensitive simplu)
-        if (in_array($value, $values, true)) {
-            return;
+        // Păstrăm unicitatea, dar actualizăm "recency":
+        // dacă valoarea există deja, o scoatem și o re-adăugăm la final.
+        $existingIndex = array_search($value, $values, true);
+        if ($existingIndex !== false) {
+            array_splice($values, $existingIndex, 1);
         }
-
-        $values[] = $value;
+        $values[] = $value; // ultima valoare = cea mai recent folosită
         update_option($option, $values);
     }
 
@@ -85,6 +94,7 @@ class Oblio_Autocomplete {
      * @return void
      */
     public static function save_values_from_form(array $form_data) {
+        $lastSet = [];
         foreach (self::$fields as $field => $option) {
             if (!isset($form_data[$field])) {
                 continue;
@@ -93,11 +103,23 @@ class Oblio_Autocomplete {
 
             if (is_array($raw)) {
                 foreach ($raw as $value) {
-                    self::save_value($field, sanitize_text_field(wp_unslash($value)));
+                    $clean = sanitize_text_field(wp_unslash($value));
+                    if (trim((string) $clean) !== '') {
+                        $lastSet[$field] = $clean; // ultima valoare ne-goală din listă
+                    }
+                    self::save_value($field, $clean);
                 }
             } else {
-                self::save_value($field, sanitize_text_field(wp_unslash($raw)));
+                $clean = sanitize_text_field(wp_unslash($raw));
+                if (trim((string) $clean) !== '') {
+                    $lastSet[$field] = $clean;
+                }
+                self::save_value($field, $clean);
             }
+        }
+
+        if (!empty($lastSet)) {
+            update_option(self::$lastSetOptionKey, $lastSet);
         }
     }
 
@@ -112,5 +134,27 @@ class Oblio_Autocomplete {
             $result[$field] = self::get_values($field);
         }
         return $result;
+    }
+
+    /**
+     * @return array<string,string> field => value
+     */
+    public static function get_last_set() {
+        $values = get_option(self::$lastSetOptionKey, []);
+        if (!is_array($values)) {
+            return [];
+        }
+        $clean = [];
+        foreach (self::$fields as $field => $optionKey) {
+            if (!isset($values[$field])) {
+                continue;
+            }
+            $v = trim((string) $values[$field]);
+            if ($v === '') {
+                continue;
+            }
+            $clean[$field] = $v;
+        }
+        return $clean;
     }
 }
