@@ -799,6 +799,7 @@ function _wp_oblio_admin_scripts($hook_suffix)
     // Pasăm datele de autocomplete către JS
     if (class_exists('Oblio_Autocomplete')) {
         $data = Oblio_Autocomplete::get_all_values();
+        $data['lastSet'] = Oblio_Autocomplete::get_last_set();
         wp_localize_script('jquery', 'oblioAutocomplete', $data);
     }
 }
